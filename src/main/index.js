@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog } from 'electron';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { openDb } from '../db/db.js';
@@ -42,7 +42,7 @@ app.whenReady().then(() => {
   repos = createRepos(db);
   repos.settings.seedDefaults();
 
-  registerIpc(ipcMain, { repos, analyze });
+  registerIpc(ipcMain, { repos, analyze, dialog });
 
   createWindow();
 

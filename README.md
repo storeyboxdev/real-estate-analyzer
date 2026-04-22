@@ -3,9 +3,9 @@
 Buy-and-hold real estate investing analysis — hand-written financial formulas,
 per-property scenarios with history, and Excel/PDF reports.
 
-> **Status:** Phases 1 (formula core), 2 (SQLite persistence + CLI), and 3
-> (Electron desktop UI) are live. No report export yet — see the roadmap
-> below.
+> **Status:** Phases 1 (formula core), 2 (SQLite persistence + CLI), 3
+> (Electron desktop UI), and 4 (Excel/PDF/Markdown export) are live. See the
+> roadmap below.
 
 ## What's in here today
 
@@ -21,6 +21,7 @@ drive it:
 - **Local store** — SQLite database of properties, named scenarios per property, and an append-only revision log so you can re-run the numbers when a price drops and keep the history
 - **CLI** — add/list properties, create and update scenarios against inputs JSON, print metrics, browse revision history
 - **Electron desktop app** — property list, property detail page with scenario tabs, minimal-with-advanced scenario form, live metrics panel with pass/fail flags against your hurdle rates, and a settings page
+- **Reports** — export any scenario's latest revision as an Excel workbook (Summary + full amortization + Assumptions sheets), a one-page PDF summary, or a Markdown file. Available from the UI (Export buttons) or the CLI (`report <scenarioId> --format ...`).
 
 Closing costs can be expressed as a % of price, a flat per-unit amount, or
 both (they'll be summed).
@@ -73,6 +74,10 @@ npm run cli -- scenario update 1 --inputs examples/sample-inputs.json --note "se
 
 npm run cli -- scenario show 1       # latest metrics
 npm run cli -- scenario history 1    # every revision with cap/CoC/cash flow
+
+npm run cli -- report 1 --format excel --out asking.xlsx
+npm run cli -- report 1 --format pdf   --out asking.pdf
+npm run cli -- report 1 --format md    --out asking.md
 ```
 
 Run `npm run cli -- --help` for the full command list.
@@ -111,11 +116,10 @@ src/
   renderer/             React UI
     src/pages/          PropertyList, PropertyDetail, Settings
     src/components/     ScenarioForm, MetricsPanel
+  reports/              Excel, PDF, and Markdown builders (framework-free)
 examples/               sample scenario inputs JSON
-tests/                  vitest suite — 64 tests and counting
+tests/                  vitest suite — 75 tests and counting
 ```
-
-`src/reports/` will appear in Phase 4.
 
 ## Roadmap
 
@@ -124,7 +128,7 @@ tests/                  vitest suite — 64 tests and counting
 | 1 ✅ | Formula core + zod schemas + vitest golden tests |
 | 2 ✅ | SQLite schema, repositories, settings, minimal CLI |
 | 3 ✅ | Electron shell, property list, entry form, results panel |
-| 4 | Excel (.xlsx) and PDF report generators |
+| 4 ✅ | Excel (.xlsx), PDF, and Markdown report generators |
 | 5 | Revision history UI and side-by-side scenario comparison |
 | Later | Zillow listing import |
 

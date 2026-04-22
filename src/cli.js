@@ -6,6 +6,7 @@ import path from 'node:path';
 import { openDb } from './db/db.js';
 import { createRepos } from './db/repositories/index.js';
 import { analyze } from './core/analysis/analyze.js';
+import { buildReportContext, buildReport } from './reports/index.js';
 
 const USAGE = `
 real-estate-analyzer CLI
@@ -32,6 +33,9 @@ real-estate-analyzer CLI
     scenario show <scenarioId>
     scenario history <scenarioId>
     scenario set-current <scenarioId>
+
+  Reports:
+    report <scenarioId> --format excel|pdf|md [--out <path>]
 
   Inputs JSON shape: see src/core/models/inputs.js (ScenarioInputsSchema).
 `;
@@ -99,6 +103,8 @@ export function run(argv = process.argv.slice(2)) {
       current: { type: 'boolean' },
       inputs: { type: 'string' },
       note: { type: 'string' },
+      format: { type: 'string' },
+      out: { type: 'string' },
     },
   });
 
@@ -113,10 +119,39 @@ export function run(argv = process.argv.slice(2)) {
     if (group === 'settings') return cmdSettings(action, rest, repos);
     if (group === 'property') return cmdProperty(action, rest, values, repos);
     if (group === 'scenario') return cmdScenario(action, rest, values, repos);
+    if (group === 'report') return cmdReport([action, ...rest], values, repos);
     die(`Unknown command: ${group}\n${USAGE}`);
   } finally {
     db.close();
   }
+}
+
+async function cmdReport(positionals, values, repos) {
+  const scenarioId = Number(positionals[0]);
+  const format = values.format;
+  if (!scenarioId || !format) {
+    die('Usage: report <scenarioId> --format excel|pdf|md [--out <path>]');
+  }
+  const scenario = repos.scenarios.getById(scenarioId);
+  if (!scenario) die(`Scenario #${scenarioId} not found`);
+  const property = repos.properties.getById(scenario.property_id);
+  const revision = repos.revisions.latest(scenarioId);
+  if (!revision) die(`Scenario #${scenarioId} has no revisions yet`);
+
+  const ctx = buildReportContext({
+    property,
+    scenario,
+    revision,
+    settings: repos.settings.parsed,
+  });
+  const { buffer, extension } = await buildReport(ctx, format);
+
+  const slug = property.address.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase();
+  const outPath = values.out
+    ? path.resolve(values.out)
+    : path.resolve(`${slug}-${scenario.name.replace(/\s+/g, '-')}.${extension}`);
+  fs.writeFileSync(outPath, buffer);
+  console.log(`Wrote ${outPath}`);
 }
 
 function cmdSettings(action, rest, repos) {

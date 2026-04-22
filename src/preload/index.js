@@ -29,6 +29,10 @@ const api = {
   analyze: {
     preview: (inputs) => ipcRenderer.invoke('analyze:preview', inputs),
   },
+  reports: {
+    export: (scenarioId, format) =>
+      ipcRenderer.invoke('reports:export', { scenarioId, format }),
+  },
 };
 
 contextBridge.exposeInMainWorld('api', api);

@@ -1,6 +1,10 @@
+import fs from 'node:fs/promises';
+import { BrowserWindow } from 'electron';
+import { buildReportContext, buildReport } from '../reports/index.js';
+
 // Wires renderer-facing IPC channels to the repositories and analysis core.
 // Channel naming: "<group>:<action>", matching the shape of window.api in preload.
-export function registerIpc(ipcMain, { repos, analyze }) {
+export function registerIpc(ipcMain, { repos, analyze, dialog }) {
   // -------- settings --------
   ipcMain.handle('settings:getAll', () => repos.settings.parsed);
   ipcMain.handle('settings:set', (_e, key, value) => {
@@ -68,4 +72,35 @@ export function registerIpc(ipcMain, { repos, analyze }) {
 
   // -------- analyze (preview without persisting) --------
   ipcMain.handle('analyze:preview', (_e, inputs) => analyze(inputs, repos.settings.parsed));
+
+  // -------- reports --------
+  ipcMain.handle('reports:export', async (e, { scenarioId, format }) => {
+    const scenario = repos.scenarios.getById(scenarioId);
+    if (!scenario) throw new Error(`Scenario ${scenarioId} not found`);
+    const property = repos.properties.getById(scenario.property_id);
+    const revision = repos.revisions.latest(scenarioId);
+    if (!revision) throw new Error(`Scenario ${scenarioId} has no revisions`);
+
+    const ctx = buildReportContext({
+      property,
+      scenario,
+      revision,
+      settings: repos.settings.parsed,
+    });
+    const { buffer, extension } = await buildReport(ctx, format);
+
+    const slug = property.address.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase();
+    const defaultName = `${slug}-${scenario.name.replace(/\s+/g, '-')}.${extension}`;
+
+    const window = BrowserWindow.fromWebContents(e.sender);
+    const { canceled, filePath } = await dialog.showSaveDialog(window, {
+      title: `Export ${format.toUpperCase()}`,
+      defaultPath: defaultName,
+      filters: [{ name: extension.toUpperCase(), extensions: [extension] }],
+    });
+    if (canceled || !filePath) return { canceled: true };
+
+    await fs.writeFile(filePath, buffer);
+    return { canceled: false, filePath };
+  });
 }

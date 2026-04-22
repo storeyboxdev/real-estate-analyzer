@@ -71,6 +71,18 @@ export default function PropertyDetailPage({ propertyId, onBack }) {
     await loadScenarios();
   }
 
+  const [exportMsg, setExportMsg] = useState(null);
+  async function handleExport(format) {
+    setExportMsg(null);
+    try {
+      const r = await window.api.reports.export(activeScenarioId, format);
+      if (r.canceled) return;
+      setExportMsg(`Saved: ${r.filePath}`);
+    } catch (err) {
+      setExportMsg(`Error: ${err.message ?? err}`);
+    }
+  }
+
   if (!property) return <div>Loading…</div>;
 
   const active = scenarios.find((s) => s.id === activeScenarioId);
@@ -151,6 +163,13 @@ export default function PropertyDetailPage({ propertyId, onBack }) {
                 Latest revision: {fmtDate(latest.created_at)}
               </div>
               <MetricsPanel outputs={latest.outputs} />
+              <div style={{ marginTop: 14, display: 'flex', gap: 8, alignItems: 'center' }}>
+                <span className="muted">Export:</span>
+                <button className="ghost" onClick={() => handleExport('excel')}>Excel</button>
+                <button className="ghost" onClick={() => handleExport('pdf')}>PDF</button>
+                <button className="ghost" onClick={() => handleExport('md')}>Markdown</button>
+                {exportMsg && <span className="muted" style={{ marginLeft: 8 }}>{exportMsg}</span>}
+              </div>
             </>
           ) : (
             <div className="muted" style={{ marginTop: 8 }}>No revisions yet for this scenario.</div>
