@@ -1,0 +1,20 @@
+node_modules/
+dist/
+out/
+.vite/
+*.log
+.DS_Store
+Thumbs.db
+
+# Local DB files
+*.sqlite
+*.sqlite-journal
+*.db
+
+# Generated reports
+/reports-out/
+
+# Editor
+.vscode/
+.idea/
+*.swp
