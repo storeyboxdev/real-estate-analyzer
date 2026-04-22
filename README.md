@@ -3,8 +3,9 @@
 Buy-and-hold real estate investing analysis — hand-written financial formulas,
 per-property scenarios with history, and Excel/PDF reports.
 
-> **Status:** Phases 1 (formula core) and 2 (SQLite persistence + CLI) are
-> live. No UI or report export yet — see the roadmap below.
+> **Status:** Phases 1 (formula core), 2 (SQLite persistence + CLI), and 3
+> (Electron desktop UI) are live. No report export yet — see the roadmap
+> below.
 
 ## What's in here today
 
@@ -19,6 +20,7 @@ drive it:
 - **Analysis orchestrator** — one call that takes a scenario's inputs and returns every metric above, validated by [zod](https://zod.dev/) and with pass/fail flags against configurable hurdle rates
 - **Local store** — SQLite database of properties, named scenarios per property, and an append-only revision log so you can re-run the numbers when a price drops and keep the history
 - **CLI** — add/list properties, create and update scenarios against inputs JSON, print metrics, browse revision history
+- **Electron desktop app** — property list, property detail page with scenario tabs, minimal-with-advanced scenario form, live metrics panel with pass/fail flags against your hurdle rates, and a settings page
 
 Closing costs can be expressed as a % of price, a flat per-unit amount, or
 both (they'll be summed).
@@ -75,6 +77,24 @@ npm run cli -- scenario history 1    # every revision with cap/CoC/cash flow
 
 Run `npm run cli -- --help` for the full command list.
 
+## Running the desktop app
+
+```bash
+npm run dev      # hot-reloading Electron dev mode
+npm run build    # production bundle in out/
+npm start        # run the built app
+```
+
+The app stores its SQLite database in your OS user-data directory (e.g.
+`%APPDATA%/real-estate-analyzer/real-estate-analyzer.sqlite` on Windows), so
+it doesn't collide with the CLI's `./data.sqlite`.
+
+**About the native module rebuild:** `better-sqlite3` is a native addon and
+needs ABI-matched binaries. `pretest` / `predev` / `prebuild` hooks rebuild
+it automatically for the right runtime (Node for tests/CLI, Electron for the
+desktop app). You can also run `npm run rebuild:node` or `npm run
+rebuild:electron` manually if you switch contexts.
+
 ## Project layout
 
 ```
@@ -86,12 +106,16 @@ src/
   db/                   SQLite schema, migrations, repositories
     repositories/       settings, properties, scenarios, revisions
   cli.js                command-line interface over the repositories
+  main/                 Electron main process + IPC handlers
+  preload/              contextBridge exposing window.api to the renderer
+  renderer/             React UI
+    src/pages/          PropertyList, PropertyDetail, Settings
+    src/components/     ScenarioForm, MetricsPanel
 examples/               sample scenario inputs JSON
 tests/                  vitest suite — 64 tests and counting
 ```
 
-`src/main/`, `src/renderer/`, and `src/reports/` will appear as later phases
-land.
+`src/reports/` will appear in Phase 4.
 
 ## Roadmap
 
@@ -99,7 +123,7 @@ land.
 |---|---|
 | 1 ✅ | Formula core + zod schemas + vitest golden tests |
 | 2 ✅ | SQLite schema, repositories, settings, minimal CLI |
-| 3 | Electron shell, property list, entry form, results panel |
+| 3 ✅ | Electron shell, property list, entry form, results panel |
 | 4 | Excel (.xlsx) and PDF report generators |
 | 5 | Revision history UI and side-by-side scenario comparison |
 | Later | Zillow listing import |
