@@ -6,9 +6,11 @@
   "description": "Buy-and-hold real estate investing analysis — formulas, scenarios, reports.",
   "scripts": {
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "cli": "node src/cli.js"
   },
   "dependencies": {
+    "better-sqlite3": "^12.9.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {

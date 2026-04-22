@@ -76,3 +76,31 @@ describe('analyze — multi-family', () => {
     expect(result.grossScheduledIncome).toBe(1500 * 4 * 12);
   });
 });
+
+describe('analyze — closing costs', () => {
+  it('uses the % of price by default', () => {
+    const r = analyze({ ...baseInputs, closingCostPct: 0.03, closingCostPerUnit: 0 });
+    expect(r.closingCosts).toBe(6000);
+  });
+
+  it('supports a per-unit flat amount', () => {
+    const r = analyze({
+      ...baseInputs,
+      closingCostPct: 0,
+      closingCostPerUnit: 1500,
+      unitRents: [1200, 1200, 1200, 1200],
+    });
+    expect(r.closingCosts).toBe(1500 * 4);
+  });
+
+  it('sums both when both are provided', () => {
+    const r = analyze({
+      ...baseInputs,
+      closingCostPct: 0.02,
+      closingCostPerUnit: 1000,
+      unitRents: [1500, 1500],
+    });
+    // 0.02 * 200000 + 2 * 1000 = 4000 + 2000 = 6000
+    expect(r.closingCosts).toBe(6000);
+  });
+});

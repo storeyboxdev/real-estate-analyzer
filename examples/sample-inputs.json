@@ -1,0 +1,20 @@
+{
+  "purchasePrice": 250000,
+  "closingCostPct": 0.03,
+  "closingCostPerUnit": 0,
+  "rehabBudget": 0,
+  "downPaymentPct": 0.25,
+  "loanTermYears": 30,
+  "interestRate": 0.0725,
+  "unitRents": [2100],
+  "otherIncomeMonthly": 0,
+  "vacancyPct": 0.05,
+  "managementPct": 0.08,
+  "maintenancePct": 0.05,
+  "capexPct": 0.05,
+  "taxesAnnual": 3200,
+  "insuranceAnnual": 1400,
+  "hoaAnnual": 0,
+  "utilitiesAnnual": 0,
+  "otherOpexAnnual": 0
+}

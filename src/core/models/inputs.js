@@ -6,7 +6,9 @@ const nonNeg = z.number().min(0);
 export const ScenarioInputsSchema = z.object({
   // Purchase
   purchasePrice: z.number().positive(),
+  // Closing costs can be expressed as a % of price, a flat per-unit amount, or both (summed).
   closingCostPct: pct.default(0.03),
+  closingCostPerUnit: nonNeg.default(0),
   rehabBudget: nonNeg.default(0),
 
   // Financing
@@ -39,6 +41,7 @@ export const SettingsSchema = z.object({
   defaultDownPaymentPct: pct.default(0.25),
   defaultLoanTermYears: z.number().int().positive().default(30),
   defaultClosingCostPct: pct.default(0.03),
+  defaultClosingCostPerUnit: nonNeg.default(0),
   defaultVacancyPct: pct.default(0.05),
   defaultManagementPct: pct.default(0.08),
   defaultMaintenancePct: pct.default(0.05),

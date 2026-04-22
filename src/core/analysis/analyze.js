@@ -18,6 +18,7 @@ export function analyze(rawInputs, rawSettings = {}) {
   const {
     purchasePrice,
     closingCostPct,
+    closingCostPerUnit,
     rehabBudget,
     downPaymentPct,
     loanTermYears,
@@ -37,7 +38,8 @@ export function analyze(rawInputs, rawSettings = {}) {
 
   const downPayment = purchasePrice * downPaymentPct;
   const loanAmount = purchasePrice - downPayment;
-  const closingCosts = purchasePrice * closingCostPct;
+  // Closing costs may come from a % of price, a flat per-unit amount, or both.
+  const closingCosts = purchasePrice * closingCostPct + unitRents.length * closingCostPerUnit;
   const totalCashInvested = downPayment + closingCosts + rehabBudget;
 
   const monthlyPmt = monthlyPayment(loanAmount, interestRate, loanTermYears);
