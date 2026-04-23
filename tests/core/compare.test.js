@@ -51,4 +51,44 @@ describe('compareScenarios', () => {
     expect(rows).toEqual([]);
     expect(entries).toEqual([]);
   });
+
+  it('compares projection.* metrics when outputs carry a projection block', () => {
+    const withProj = {
+      label: 'with projection',
+      outputs: {
+        ...a.outputs,
+        projection: { irr: 0.12, mirr: 0.10, equityAtExit: 80000 },
+      },
+    };
+    const alsoWithProj = {
+      label: 'also with projection',
+      outputs: {
+        ...b.outputs,
+        projection: { irr: 0.18, mirr: 0.13, equityAtExit: 120000 },
+      },
+    };
+    const { rows } = compareScenarios([withProj, alsoWithProj]);
+    const irrRow = rows.find((r) => r.metric === 'projectionIrr');
+    expect(irrRow.values[0].value).toBe(0.12);
+    expect(irrRow.values[1].value).toBe(0.18);
+    expect(irrRow.values[1].best).toBe(true);
+    expect(irrRow.values[0].worst).toBe(true);
+
+    const equityRow = rows.find((r) => r.metric === 'projectionEquityAtExit');
+    expect(equityRow.values[1].best).toBe(true);
+  });
+
+  it('gracefully handles entries missing the projection block', () => {
+    const withProj = {
+      label: 'with',
+      outputs: { ...a.outputs, projection: { irr: 0.12, mirr: 0.10, equityAtExit: 80000 } },
+    };
+    const noProj = { label: 'without', outputs: { ...b.outputs } };
+    const { rows } = compareScenarios([withProj, noProj]);
+    const irrRow = rows.find((r) => r.metric === 'projectionIrr');
+    expect(irrRow.values[0].finite).toBe(true);
+    expect(irrRow.values[1].finite).toBe(false);
+    // Only one finite value -> no best/worst flags
+    expect(irrRow.values[0].best).toBeUndefined();
+  });
 });

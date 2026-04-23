@@ -2,6 +2,32 @@ import { z } from 'zod';
 
 const pct = z.number().min(0).max(1);
 const nonNeg = z.number().min(0);
+// Growth rates can run negative (deflation, rent compression) and positive beyond
+// 50% in the rare case, so we don't clamp them like percentages of price.
+const rate = z.number().min(-0.5).max(1);
+
+// Per-year override: at least one of cashFlow or noi may be present. If
+// cashFlow is set, it replaces the computed figure for that year outright;
+// noi is a narrower override that still lets debt service flow through.
+export const YearOverrideSchema = z.object({
+  cashFlow: z.number().optional(),
+  noi: z.number().optional(),
+  note: z.string().optional(),
+});
+
+export const ProjectionConfigSchema = z.object({
+  holdYears: z.number().int().min(1).max(50).default(5),
+  appreciationRate: rate.default(0.03),
+  rentGrowthRate: rate.default(0.02),
+  expenseGrowthRate: rate.default(0.02),
+  includeSale: z.boolean().default(true),
+  sellingCostPct: pct.default(0.06),
+  // MIRR rates — defaults filled from settings at analyze() time when missing.
+  mirrFinanceRate: pct.optional(),
+  mirrReinvestRate: pct.optional(),
+  // Per-year overrides keyed by year number as a string ("1", "2", ...).
+  yearOverrides: z.record(z.string(), YearOverrideSchema).default({}),
+});
 
 export const ScenarioInputsSchema = z.object({
   // Purchase
@@ -34,6 +60,10 @@ export const ScenarioInputsSchema = z.object({
   hoaAnnual: nonNeg.default(0),
   utilitiesAnnual: nonNeg.default(0),
   otherOpexAnnual: nonNeg.default(0),
+
+  // Optional multi-year projection block. When absent, analyze() returns the
+  // single-year outputs only (backwards-compatible with existing saved revisions).
+  projection: ProjectionConfigSchema.optional(),
 });
 
 export const SettingsSchema = z.object({
@@ -76,6 +106,17 @@ export const ScenarioOutputsSchema = z.object({
   // Pass/fail vs. hurdle
   meetsCapRate: z.boolean(),
   meetsCoCReturn: z.boolean(),
+
+  // Populated only when inputs.projection was provided. See projection.js.
+  projection: z.object({
+    irr: z.number(),
+    mirr: z.number(),
+    equityAtExit: z.number(),
+    totalEquityBuilt: z.number(),
+    netSaleProceeds: z.number().nullable(),
+    years: z.array(z.record(z.string(), z.any())),
+    cashFlowSeries: z.array(z.number()),
+  }).optional(),
 });
 
 export function parseInputs(raw) {

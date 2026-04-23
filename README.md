@@ -3,9 +3,10 @@
 Buy-and-hold real estate investing analysis — hand-written financial formulas,
 per-property scenarios with history, and Excel/PDF reports.
 
-> **Status:** Phases 1–6 are live. The core, persistence, Electron UI,
-> Excel/PDF/Markdown export, revision history, scenario comparison, and
-> paste-from-listing import all work today.
+> **Status:** Phases 1–7 are live. The core, persistence, Electron UI,
+> Excel/PDF/Markdown export, revision history, scenario comparison,
+> paste-from-listing import, and long-term projections (IRR, MIRR, capital
+> accumulation) all work today.
 
 ## What's in here today
 
@@ -13,7 +14,7 @@ A framework-free JavaScript library that computes the metrics you'll find in
 most buy-and-hold investing books, plus a local SQLite store and a CLI to
 drive it:
 
-- **Time value of money** — `fv`, `pv`, `pmt`, `npv`, `irr`
+- **Time value of money** — `fv`, `pv`, `pmt`, `npv`, `irr`, `mirr`
 - **Mortgage amortization** — monthly payment, full schedule, remaining balance, total interest
 - **Cash flow** — gross scheduled income, effective gross income, operating expenses, NOI, annual cash flow
 - **Returns** — cap rate, cash-on-cash, DSCR, GRM
@@ -24,6 +25,7 @@ drive it:
 - **Reports** — export any scenario's latest revision as an Excel workbook (Summary + full amortization + Assumptions sheets), a one-page PDF summary, or a Markdown file. Available from the UI (Export buttons) or the CLI (`report <scenarioId> --format ...`).
 - **Revision history & comparison** — click "Show history" on a scenario to see the timeline of revisions with their headline metrics and "restore these inputs" for any earlier revision. When a property has two or more scenarios, the "Compare" tab shows them side by side with best/worst flags per metric (cap rate, CoC, DSCR, cash flow, GRM, total cash invested, monthly payment).
 - **Listing paste import** — paste raw text copied from a Zillow/Redfin/Trulia/MLS listing page, and the app pulls out address, property type, unit count (with duplex/triplex/fourplex inference), price, rent estimate, annual taxes, HOA, and beds/baths/sqft. Fields are fully editable in the preview before you create the property. No scraping — the app never contacts Zillow; you control what text comes in.
+- **Long-term projection** — optional expander on the scenario form that adds a multi-year pro forma. Configure hold period, appreciation %, rent growth %, expense growth %, and whether to model a sale at exit (with configurable selling cost). Each year can have its cash flow overridden individually to model partial-year ramp-ups, big CapEx events, refinances, or worst-case years. Results include **IRR**, **MIRR** (with configurable finance and reinvestment rates), year-by-year equity (capital accumulation), total equity built, and net sale proceeds. Surfaces in the metrics panel, compare table, Excel (new Projection sheet), PDF, and Markdown.
 
 Closing costs can be expressed as a % of price, a flat per-unit amount, or
 both (they'll be summed).

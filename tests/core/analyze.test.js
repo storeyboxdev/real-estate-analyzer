@@ -77,6 +77,50 @@ describe('analyze — multi-family', () => {
   });
 });
 
+describe('analyze — projection passthrough', () => {
+  it('returns no projection field when config is absent', () => {
+    const r = analyze(baseInputs);
+    expect(r.projection).toBeUndefined();
+  });
+
+  it('returns a projection field when config is present', () => {
+    const r = analyze({
+      ...baseInputs,
+      projection: {
+        holdYears: 5,
+        appreciationRate: 0.03,
+        rentGrowthRate: 0.02,
+        expenseGrowthRate: 0.02,
+        includeSale: true,
+        sellingCostPct: 0.06,
+      },
+    });
+    expect(r.projection).toBeDefined();
+    expect(r.projection.years).toHaveLength(5);
+    expect(Number.isFinite(r.projection.irr)).toBe(true);
+    expect(Number.isFinite(r.projection.mirr)).toBe(true);
+  });
+
+  it('leaves single-year fields unchanged when projection is attached', () => {
+    const bare = analyze(baseInputs);
+    const withProj = analyze({
+      ...baseInputs,
+      projection: {
+        holdYears: 5,
+        appreciationRate: 0.03,
+        rentGrowthRate: 0.02,
+        expenseGrowthRate: 0.02,
+        includeSale: true,
+        sellingCostPct: 0.06,
+      },
+    });
+    // Every scalar on the root outputs should match.
+    for (const key of Object.keys(bare)) {
+      expect(withProj[key]).toEqual(bare[key]);
+    }
+  });
+});
+
 describe('analyze — closing costs', () => {
   it('uses the % of price by default', () => {
     const r = analyze({ ...baseInputs, closingCostPct: 0.03, closingCostPerUnit: 0 });

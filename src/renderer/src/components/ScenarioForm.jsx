@@ -27,6 +27,21 @@ const DEFAULTS = {
   hoaAnnual: '0',
   utilitiesAnnual: '0',
   otherOpexAnnual: '0',
+
+  // projection — optional block. When `enabled` is false, toInputs() drops it
+  // entirely so analyze() skips projection work.
+  projection: {
+    enabled: false,
+    holdYears: '5',
+    appreciationRatePct: '3',
+    rentGrowthRatePct: '2',
+    expenseGrowthRatePct: '2',
+    includeSale: true,
+    sellingCostPctPct: '6',
+    mirrFinanceRatePct: '',   // empty = use current mortgage rate from settings
+    mirrReinvestRatePct: '',  // empty = use required CoC from settings
+    yearOverrides: {},        // keyed by year string → raw cash-flow string
+  },
 };
 
 // Safe Number parse: '' -> 0 for optional fields (callers that require a
@@ -37,7 +52,7 @@ function n(s) {
 }
 
 function toInputs(state) {
-  return {
+  const base = {
     purchasePrice: n(state.purchasePrice),
     closingCostPct: n(state.closingCostPct) / 100,
     closingCostPerUnit: n(state.closingCostPerUnit),
@@ -58,6 +73,33 @@ function toInputs(state) {
     utilitiesAnnual: n(state.utilitiesAnnual),
     otherOpexAnnual: n(state.otherOpexAnnual),
   };
+  if (state.projection?.enabled) {
+    const p = state.projection;
+    const yearOverrides = {};
+    for (const [year, raw] of Object.entries(p.yearOverrides ?? {})) {
+      if (raw === '' || raw === null || raw === undefined) continue;
+      const parsed = Number(raw);
+      if (Number.isFinite(parsed)) {
+        yearOverrides[year] = { cashFlow: parsed };
+      }
+    }
+    base.projection = {
+      holdYears: Math.max(1, Math.min(50, Math.round(n(p.holdYears) || 5))),
+      appreciationRate: n(p.appreciationRatePct) / 100,
+      rentGrowthRate: n(p.rentGrowthRatePct) / 100,
+      expenseGrowthRate: n(p.expenseGrowthRatePct) / 100,
+      includeSale: !!p.includeSale,
+      sellingCostPct: n(p.sellingCostPctPct) / 100,
+      yearOverrides,
+    };
+    if (p.mirrFinanceRatePct !== '') {
+      base.projection.mirrFinanceRate = n(p.mirrFinanceRatePct) / 100;
+    }
+    if (p.mirrReinvestRatePct !== '') {
+      base.projection.mirrReinvestRate = n(p.mirrReinvestRatePct) / 100;
+    }
+  }
+  return base;
 }
 
 // Strip floating-point noise from a display value (0.07125 * 100 -> "7.125").
@@ -94,6 +136,27 @@ function fromInputs(inputs) {
     hoaAnnual: inputs.hoaAnnual != null ? displayNum(inputs.hoaAnnual) : '0',
     utilitiesAnnual: inputs.utilitiesAnnual != null ? displayNum(inputs.utilitiesAnnual) : '0',
     otherOpexAnnual: inputs.otherOpexAnnual != null ? displayNum(inputs.otherOpexAnnual) : '0',
+    projection: projectionFromInputs(inputs.projection),
+  };
+}
+
+function projectionFromInputs(p) {
+  if (!p) return { ...DEFAULTS.projection };
+  const yearOverrides = {};
+  for (const [year, v] of Object.entries(p.yearOverrides ?? {})) {
+    if (v && Number.isFinite(v.cashFlow)) yearOverrides[year] = displayNum(v.cashFlow);
+  }
+  return {
+    enabled: true,
+    holdYears: displayNum(p.holdYears ?? 5),
+    appreciationRatePct: p.appreciationRate != null ? displayPct(p.appreciationRate) : '3',
+    rentGrowthRatePct: p.rentGrowthRate != null ? displayPct(p.rentGrowthRate) : '2',
+    expenseGrowthRatePct: p.expenseGrowthRate != null ? displayPct(p.expenseGrowthRate) : '2',
+    includeSale: p.includeSale !== false,
+    sellingCostPctPct: p.sellingCostPct != null ? displayPct(p.sellingCostPct) : '6',
+    mirrFinanceRatePct: p.mirrFinanceRate != null ? displayPct(p.mirrFinanceRate) : '',
+    mirrReinvestRatePct: p.mirrReinvestRate != null ? displayPct(p.mirrReinvestRate) : '',
+    yearOverrides,
   };
 }
 
@@ -297,10 +360,114 @@ export default function ScenarioForm({ initialInputs, initialUnits = 1, onSubmit
         </div>
       </details>
 
+      <details open={state.projection?.enabled}>
+        <summary>Long-term projection — IRR, MIRR, capital accumulation</summary>
+        <ProjectionBlock
+          value={state.projection ?? DEFAULTS.projection}
+          onChange={(next) => setState((s) => ({ ...s, projection: next }))}
+        />
+      </details>
+
       <div style={{ marginTop: 14, display: 'flex', gap: 8 }}>
         <button type="submit" disabled={busy}>{busy ? 'Saving…' : submitLabel}</button>
       </div>
       {error && <div className="error">{error}</div>}
     </form>
+  );
+}
+
+// Sub-form for the projection block. Keeps its own little helpers for the
+// per-year override table so the outer form stays readable.
+function ProjectionBlock({ value, onChange }) {
+  function setField(key, next) {
+    onChange({ ...value, [key]: next });
+  }
+  function setOverride(year, raw) {
+    onChange({ ...value, yearOverrides: { ...value.yearOverrides, [String(year)]: raw } });
+  }
+
+  const years = Math.max(1, Math.min(50, Math.round(Number(value.holdYears) || 0)));
+
+  return (
+    <div>
+      <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
+        <input type="checkbox" checked={!!value.enabled}
+          onChange={(e) => setField('enabled', e.target.checked)}
+          style={{ width: 'auto' }} />
+        <span>Run multi-year projection (IRR / MIRR / equity at exit)</span>
+      </label>
+
+      {value.enabled && (
+        <>
+          <h3 style={{ marginTop: 14 }}>Assumptions</h3>
+          <div className="grid-3">
+            <div>
+              <label>Hold period (years)</label>
+              <input type="text" inputMode="numeric" value={value.holdYears}
+                onChange={(e) => setField('holdYears', e.target.value)} />
+            </div>
+            <div>
+              <label>Annual appreciation (%)</label>
+              <input {...numProps} value={value.appreciationRatePct}
+                onChange={(e) => setField('appreciationRatePct', e.target.value)} />
+            </div>
+            <div>
+              <label>Annual rent growth (%)</label>
+              <input {...numProps} value={value.rentGrowthRatePct}
+                onChange={(e) => setField('rentGrowthRatePct', e.target.value)} />
+            </div>
+            <div>
+              <label>Annual expense growth (%)</label>
+              <input {...numProps} value={value.expenseGrowthRatePct}
+                onChange={(e) => setField('expenseGrowthRatePct', e.target.value)} />
+            </div>
+            <div>
+              <label>MIRR finance rate (%)</label>
+              <input {...numProps} value={value.mirrFinanceRatePct}
+                onChange={(e) => setField('mirrFinanceRatePct', e.target.value)}
+                placeholder="blank = use settings" />
+            </div>
+            <div>
+              <label>MIRR reinvest rate (%)</label>
+              <input {...numProps} value={value.mirrReinvestRatePct}
+                onChange={(e) => setField('mirrReinvestRatePct', e.target.value)}
+                placeholder="blank = use settings" />
+            </div>
+          </div>
+
+          <h3 style={{ marginTop: 14 }}>Sale at end of hold period</h3>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <input type="checkbox" checked={!!value.includeSale}
+              onChange={(e) => setField('includeSale', e.target.checked)}
+              style={{ width: 'auto' }} />
+            <span>Include sale in the IRR / MIRR computation</span>
+          </label>
+          {value.includeSale && (
+            <div style={{ maxWidth: 220, marginTop: 8 }}>
+              <label>Selling cost (% of sale price)</label>
+              <input {...numProps} value={value.sellingCostPctPct}
+                onChange={(e) => setField('sellingCostPctPct', e.target.value)} />
+            </div>
+          )}
+
+          <h3 style={{ marginTop: 14 }}>Per-year cash-flow overrides (optional)</h3>
+          <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
+            Leave a year blank to use the computed value. Enter a dollar amount to force that year's cash flow
+            — useful for rehab ramp years, big CapEx events, or refinance windows.
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 8 }}>
+            {Array.from({ length: years }, (_, i) => i + 1).map((y) => (
+              <div key={y}>
+                <label>Year {y} cash flow ($)</label>
+                <input {...numProps}
+                  value={value.yearOverrides?.[String(y)] ?? ''}
+                  onChange={(e) => setOverride(y, e.target.value)}
+                  placeholder="computed" />
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
   );
 }

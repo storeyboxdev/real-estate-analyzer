@@ -13,9 +13,84 @@ export async function buildExcel(ctx) {
 
   addSummarySheet(wb, ctx);
   addAmortizationSheet(wb, ctx);
+  if (ctx.outputs.projection) addProjectionSheet(wb, ctx);
   addAssumptionsSheet(wb, ctx);
 
   return await wb.xlsx.writeBuffer();
+}
+
+function addProjectionSheet(wb, ctx) {
+  const ws = wb.addWorksheet('Projection');
+  const p = ctx.outputs.projection;
+
+  // Summary block at the top.
+  ws.columns = [
+    { width: 8 },  // year
+    { width: 16 }, // gross rent
+    { width: 16 }, // egi
+    { width: 16 }, // opex
+    { width: 16 }, // noi
+    { width: 16 }, // debt service
+    { width: 16 }, // cash flow
+    { width: 16 }, // property value
+    { width: 18 }, // remaining balance
+    { width: 14 }, // equity
+    { width: 10 }, // overridden flag
+  ];
+
+  ws.mergeCells('A1:K1');
+  ws.getCell('A1').value = `Long-term projection — ${p.years.length}-year hold`;
+  ws.getCell('A1').font = { size: 14, bold: true };
+  ws.getCell('A1').fill = SECTION_FILL;
+
+  const summaryRows = [
+    ['IRR', p.irr, '%', Number.isFinite(p.irr) && p.irr > 0],
+    ['MIRR', p.mirr, '%', Number.isFinite(p.mirr) && p.mirr > 0],
+    ['Equity at exit', p.equityAtExit, '$', null],
+    ['Total equity built', p.totalEquityBuilt, '$', p.totalEquityBuilt >= 0],
+  ];
+  if (p.netSaleProceeds !== null) {
+    summaryRows.push(['Net sale proceeds', p.netSaleProceeds, '$', null]);
+  }
+  for (let i = 0; i < summaryRows.length; i++) {
+    const [label, value, fmt, passFail] = summaryRows[i];
+    const r = i + 2;
+    ws.getCell(`A${r}`).value = label;
+    ws.getCell(`A${r}`).font = { bold: true };
+    const v = ws.getCell(`B${r}`);
+    v.value = value;
+    v.numFmt = fmt === '%' ? '0.00%' : '$#,##0.00';
+    if (passFail === true) v.font = GOOD_FONT;
+    else if (passFail === false) v.font = BAD_FONT;
+  }
+
+  // Year-by-year table below.
+  const tableStart = 2 + summaryRows.length + 1;
+  const headers = ['Year', 'Gross rent', 'EGI', 'Opex', 'NOI', 'Debt service', 'Cash flow', 'Property value', 'Remaining balance', 'Equity', 'Override'];
+  const headerRow = ws.getRow(tableStart);
+  headers.forEach((h, i) => {
+    headerRow.getCell(i + 1).value = h;
+  });
+  headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+  headerRow.fill = HEADER_FILL;
+
+  for (let i = 0; i < p.years.length; i++) {
+    const y = p.years[i];
+    const r = ws.getRow(tableStart + 1 + i);
+    r.getCell(1).value = y.year;
+    r.getCell(2).value = y.grossRent;
+    r.getCell(3).value = y.effectiveGrossIncome;
+    r.getCell(4).value = y.operatingExpenses;
+    r.getCell(5).value = y.noi;
+    r.getCell(6).value = y.debtService;
+    r.getCell(7).value = y.cashFlow;
+    r.getCell(8).value = y.propertyValue;
+    r.getCell(9).value = y.remainingBalance;
+    r.getCell(10).value = y.equity;
+    r.getCell(11).value = y.overridden ? 'yes' : '';
+    for (let c = 2; c <= 10; c++) r.getCell(c).numFmt = '$#,##0.00';
+  }
+  ws.views = [{ state: 'frozen', ySplit: tableStart }];
 }
 
 function addSummarySheet(wb, ctx) {

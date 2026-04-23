@@ -8,6 +8,7 @@ import {
 } from '../formulas/cashflow.js';
 import { capRate, cocReturn, dscr, grm } from '../formulas/returns.js';
 import { ScenarioInputsSchema, SettingsSchema } from '../models/inputs.js';
+import { buildProjection } from './projection.js';
 
 // Single entry point: given validated inputs + settings, return all metrics.
 // Pure function — no I/O, no DB, no Electron.
@@ -73,7 +74,7 @@ export function analyze(rawInputs, rawSettings = {}) {
   const cap = capRate(noi, purchasePrice);
   const coc = cocReturn(annualCF, totalCashInvested);
 
-  return {
+  const outputs = {
     loanAmount,
     downPayment,
     closingCosts,
@@ -96,4 +97,12 @@ export function analyze(rawInputs, rawSettings = {}) {
     meetsCapRate: cap >= settings.requiredCapRate,
     meetsCoCReturn: coc >= settings.requiredCoCReturn,
   };
+
+  // Optional: fold in the multi-year projection if the inputs carry a config.
+  // Existing saved revisions without a projection block are unaffected.
+  if (inputs.projection) {
+    outputs.projection = buildProjection(inputs, outputs, inputs.projection, settings);
+  }
+
+  return outputs;
 }

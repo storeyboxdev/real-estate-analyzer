@@ -100,13 +100,49 @@ export function buildPdf(ctx) {
       assumptionRows.push(['Missed rent during setup', usd(i.initialMissedRent)]);
     kv(doc, assumptionRows);
 
+    // Long-term projection block — only rendered when config was provided.
+    if (ctx.outputs.projection) {
+      const p = ctx.outputs.projection;
+      section(doc, `Long-term projection (${p.years.length}-year hold)`);
+      kv(doc, [
+        [
+          'IRR',
+          Number.isFinite(p.irr) ? pct(p.irr) : 'n/a',
+          Number.isFinite(p.irr) && p.irr > 0 ? GOOD : BAD,
+        ],
+        [
+          'MIRR',
+          Number.isFinite(p.mirr) ? pct(p.mirr) : 'n/a',
+          Number.isFinite(p.mirr) && p.mirr > 0 ? GOOD : BAD,
+        ],
+        ['Equity at exit', usd(p.equityAtExit)],
+        [
+          'Total equity built',
+          usd(p.totalEquityBuilt),
+          p.totalEquityBuilt >= 0 ? GOOD : BAD,
+        ],
+        ...(p.netSaleProceeds !== null
+          ? [['Net sale proceeds', usd(p.netSaleProceeds)]]
+          : [['Sale', 'not included']]),
+      ]);
+      // Compact equity table (one line per year) — only if we have space.
+      doc.moveDown(0.2);
+      doc.fontSize(9).fillColor(MUTED);
+      const eqLine = p.years
+        .map((y) => `Y${y.year}: ${usd(y.equity)}${y.overridden ? '*' : ''}`)
+        .join('   ');
+      doc.text('Equity by year — ' + eqLine, { width: doc.page.width - doc.page.margins.left - doc.page.margins.right });
+    }
+
     doc.moveDown(0.5);
     hr(doc);
     doc
       .fontSize(8)
       .fillColor(MUTED)
       .text(
-        'Pass/fail flags reflect your configured hurdle rates. Variable rates apply to effective gross income. See the Assumptions sheet of the Excel export for the full input list.',
+        'Pass/fail flags reflect your configured hurdle rates. Variable rates apply to effective gross income. ' +
+          (ctx.outputs.projection ? 'A * marks a year with a cash-flow override. ' : '') +
+          'See the Projection and Assumptions sheets of the Excel export for the full detail.',
         { align: 'left' },
       );
 

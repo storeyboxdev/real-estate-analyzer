@@ -89,6 +89,71 @@ describe('excel report', () => {
   });
 });
 
+describe('reports with projection', () => {
+  function makeProjectionCtx() {
+    const ctx = makeCtx();
+    const inputsWithProj = {
+      ...ctx.inputs,
+      projection: {
+        holdYears: 5,
+        appreciationRate: 0.03,
+        rentGrowthRate: 0.02,
+        expenseGrowthRate: 0.02,
+        includeSale: true,
+        sellingCostPct: 0.06,
+      },
+    };
+    const outputs = analyze(inputsWithProj);
+    return buildReportContext({
+      property: ctx.property,
+      scenario: ctx.scenario,
+      revision: {
+        ...ctx.revision,
+        inputs: inputsWithProj,
+        outputs,
+      },
+      settings: {},
+    });
+  }
+
+  it('markdown includes a Long-term projection section with the year table', () => {
+    const md = buildMarkdown(makeProjectionCtx());
+    expect(md).toContain('## Long-term projection');
+    expect(md).toContain('| IRR |');
+    expect(md).toContain('| MIRR |');
+    expect(md).toContain('Equity at exit');
+  });
+
+  it('excel includes a Projection worksheet when projection is present', async () => {
+    const buf = await buildExcel(makeProjectionCtx());
+    const wb = new ExcelJS.Workbook();
+    await wb.xlsx.load(buf);
+    const names = wb.worksheets.map((s) => s.name);
+    expect(names).toContain('Projection');
+  });
+
+  it('excel Projection sheet has one row per hold year plus header + summary', async () => {
+    const buf = await buildExcel(makeProjectionCtx());
+    const wb = new ExcelJS.Workbook();
+    await wb.xlsx.load(buf);
+    const ws = wb.getWorksheet('Projection');
+    // Title + 4 summary rows (no sale-proceeds line in "not included" case — here includeSale is true so +1 more)
+    // + blank row + header + 5 data rows. We just verify the data rows exist at the expected spot.
+    // Title at row 1, summary rows 2..6 (IRR, MIRR, Equity, Total equity, Net sale = 5 rows), header at row 8.
+    expect(ws.getRow(8).getCell(1).value).toBe('Year');
+    expect(ws.getRow(9).getCell(1).value).toBe(1);
+    expect(ws.getRow(13).getCell(1).value).toBe(5);
+  });
+
+  it('no projection = no Projection sheet', async () => {
+    const buf = await buildExcel(makeCtx());
+    const wb = new ExcelJS.Workbook();
+    await wb.xlsx.load(buf);
+    const names = wb.worksheets.map((s) => s.name);
+    expect(names).not.toContain('Projection');
+  });
+});
+
 describe('buildReport dispatcher', () => {
   const ctx = makeCtx();
 

@@ -34,6 +34,23 @@ export default function MetricsPanel({ outputs }) {
       <Row k="Cash-on-cash" v={fmtPct(outputs.cocReturn) + (outputs.meetsCoCReturn ? '  ✓' : '  ✗')} cls={outputs.meetsCoCReturn ? 'good' : 'bad'} />
       <Row k="DSCR" v={Number.isFinite(outputs.dscr) ? fmtNum(outputs.dscr) : String(outputs.dscr)} cls={outputs.dscr >= 1 ? 'good' : 'bad'} />
       <Row k="GRM" v={fmtNum(outputs.grm)} />
+
+      {outputs.projection && <ProjectionRows p={outputs.projection} />}
     </div>
+  );
+}
+
+function ProjectionRows({ p }) {
+  return (
+    <>
+      <div className="group">Long-term projection ({p.years.length}-year hold)</div>
+      <Row k="IRR" v={Number.isFinite(p.irr) ? fmtPct(p.irr) : 'n/a'} cls={p.irr > 0 ? 'good' : 'bad'} />
+      <Row k="MIRR" v={Number.isFinite(p.mirr) ? fmtPct(p.mirr) : 'n/a'} cls={p.mirr > 0 ? 'good' : 'bad'} />
+      <Row k="Equity at exit" v={fmtUsd(p.equityAtExit)} />
+      <Row k="Total equity built" v={fmtUsd(p.totalEquityBuilt)} cls={p.totalEquityBuilt >= 0 ? 'good' : 'bad'} />
+      {p.netSaleProceeds !== null && (
+        <Row k="Net sale proceeds" v={fmtUsd(p.netSaleProceeds)} />
+      )}
+    </>
   );
 }

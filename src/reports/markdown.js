@@ -77,5 +77,37 @@ export function buildMarkdown(ctx) {
   );
   lines.push('');
 
+  // Long-term projection (only when the run produced one).
+  const p = ctx.outputs.projection;
+  if (p) {
+    lines.push(`## Long-term projection (${p.years.length}-year hold)`);
+    lines.push('');
+    lines.push('| Metric | Value |');
+    lines.push('|---|---|');
+    lines.push(`| IRR | ${Number.isFinite(p.irr) ? pct(p.irr) : 'n/a'} |`);
+    lines.push(`| MIRR | ${Number.isFinite(p.mirr) ? pct(p.mirr) : 'n/a'} |`);
+    lines.push(`| Equity at exit | ${usd(p.equityAtExit)} |`);
+    lines.push(`| Total equity built | ${usd(p.totalEquityBuilt)} |`);
+    if (p.netSaleProceeds !== null) {
+      lines.push(`| Net sale proceeds | ${usd(p.netSaleProceeds)} |`);
+    } else {
+      lines.push(`| Sale | not included |`);
+    }
+    lines.push('');
+    lines.push('| Year | Gross rent | NOI | Cash flow | Property value | Balance | Equity |');
+    lines.push('|---|---|---|---|---|---|---|');
+    for (const y of p.years) {
+      const tag = y.overridden ? ' *' : '';
+      lines.push(
+        `| ${y.year}${tag} | ${usd(y.grossRent)} | ${usd(y.noi)} | ${usd(y.cashFlow)} | ${usd(y.propertyValue)} | ${usd(y.remainingBalance)} | ${usd(y.equity)} |`,
+      );
+    }
+    if (p.years.some((y) => y.overridden)) {
+      lines.push('');
+      lines.push('*\\* year has a cash-flow override.*');
+    }
+    lines.push('');
+  }
+
   return lines.join('\n');
 }
