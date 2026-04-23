@@ -80,13 +80,33 @@ export function buildPdf(ctx) {
       ['GRM', num(ctx.outputs.grm)],
     ]);
 
+    // Break down the single "Operating expenses" line above so the reader can
+    // see what was assumed. Variable rates apply to EGI; fixed items are annual $.
+    const i = ctx.inputs;
+    section(doc, 'Operating assumptions');
+    const assumptionRows = [
+      ['Vacancy', pct(i.vacancyPct)],
+      ['Property management', pct(i.managementPct)],
+      ['Maintenance', pct(i.maintenancePct)],
+      ['CapEx reserves', pct(i.capexPct)],
+      ['Taxes (annual)', usd(i.taxesAnnual)],
+      ['Insurance (annual)', usd(i.insuranceAnnual)],
+    ];
+    if (i.hoaAnnual) assumptionRows.push(['HOA (annual)', usd(i.hoaAnnual)]);
+    if (i.utilitiesAnnual) assumptionRows.push(['Utilities (annual)', usd(i.utilitiesAnnual)]);
+    if (i.otherOpexAnnual) assumptionRows.push(['Other opex (annual)', usd(i.otherOpexAnnual)]);
+    if (i.rehabBudget) assumptionRows.push(['Repairs until rentable', usd(i.rehabBudget)]);
+    if (i.initialMissedRent)
+      assumptionRows.push(['Missed rent during setup', usd(i.initialMissedRent)]);
+    kv(doc, assumptionRows);
+
     doc.moveDown(0.5);
     hr(doc);
     doc
       .fontSize(8)
       .fillColor(MUTED)
       .text(
-        'Pass/fail flags reflect your configured hurdle rates. See the Assumptions sheet of the Excel export for the full input list.',
+        'Pass/fail flags reflect your configured hurdle rates. Variable rates apply to effective gross income. See the Assumptions sheet of the Excel export for the full input list.',
         { align: 'left' },
       );
 

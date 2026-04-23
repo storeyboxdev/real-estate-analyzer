@@ -24,7 +24,7 @@ export const ScenarioInputsSchema = z.object({
 
   // Operating assumptions
   vacancyPct: pct.default(0.05),
-  managementPct: pct.default(0.08),
+  managementPct: pct.default(0.10),
   maintenancePct: pct.default(0.05),
   capexPct: pct.default(0.05),
 
@@ -45,7 +45,7 @@ export const SettingsSchema = z.object({
   defaultClosingCostPct: pct.default(0.03),
   defaultClosingCostPerUnit: nonNeg.default(0),
   defaultVacancyPct: pct.default(0.05),
-  defaultManagementPct: pct.default(0.08),
+  defaultManagementPct: pct.default(0.10),
   defaultMaintenancePct: pct.default(0.05),
   defaultCapexPct: pct.default(0.05),
 });

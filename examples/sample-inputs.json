@@ -10,7 +10,7 @@
   "unitRents": [2100],
   "otherIncomeMonthly": 0,
   "vacancyPct": 0.05,
-  "managementPct": 0.08,
+  "managementPct": 0.10,
   "maintenancePct": 0.05,
   "capexPct": 0.05,
   "taxesAnnual": 3200,
