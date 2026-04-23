@@ -14,35 +14,67 @@ const FIELDS = [
   { key: 'defaultCapexPct', label: 'Default CapEx (%)', pct: true },
 ];
 
+// Convert a persisted decimal (0.07125) to a clean display string ("7.125"),
+// eating the floating-point rounding that `0.07125 * 100` otherwise produces.
+function displayValue(n, pct) {
+  if (n === null || n === undefined || !Number.isFinite(n)) return '';
+  const shown = pct ? n * 100 : n;
+  return Number(shown.toFixed(10)).toString();
+}
+
 export default function SettingsPage() {
   const [settings, setSettings] = useState(null);
-  const [dirty, setDirty] = useState({});
+  // drafts holds the raw input strings while editing. We only parse on Save,
+  // so typing "7.125" isn't mangled by a ×100 ÷100 roundtrip on every keystroke.
+  const [drafts, setDrafts] = useState({});
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    window.api.settings.getAll().then(setSettings);
+    window.api.settings.getAll().then((fresh) => {
+      setSettings(fresh);
+      setDrafts(initialDrafts(fresh));
+    });
   }, []);
 
   if (!settings) return <div>Loading…</div>;
 
-  function onChange(key, rawValue, pct) {
+  function initialDrafts(source) {
+    const d = {};
+    for (const f of FIELDS) d[f.key] = displayValue(source[f.key], f.pct);
+    return d;
+  }
+
+  function onChange(key, rawString) {
     setSaved(false);
-    const n = Number(rawValue);
-    const value = pct ? n / 100 : n;
-    setDirty((d) => ({ ...d, [key]: value }));
+    setDrafts((d) => ({ ...d, [key]: rawString }));
+  }
+
+  function isDirty(key) {
+    return drafts[key] !== displayValue(settings[key], FIELDS.find((f) => f.key === key).pct);
   }
 
   async function save() {
-    for (const [key, value] of Object.entries(dirty)) {
-      await window.api.settings.set(key, value);
+    for (const f of FIELDS) {
+      if (!isDirty(f.key)) continue;
+      const raw = drafts[f.key];
+      if (raw === '' || raw === '-' || raw === '.') continue; // skip mid-edit values
+      const n = Number(raw);
+      if (!Number.isFinite(n)) continue;
+      const value = f.pct ? n / 100 : n;
+      await window.api.settings.set(f.key, value);
     }
     const fresh = await window.api.settings.getAll();
     setSettings(fresh);
-    setDirty({});
+    setDrafts(initialDrafts(fresh));
     setSaved(true);
   }
 
-  const merged = { ...settings, ...dirty };
+  function reset() {
+    setDrafts(initialDrafts(settings));
+    setSaved(false);
+  }
+
+  const anyDirty = FIELDS.some((f) => isDirty(f.key));
 
   return (
     <div>
@@ -55,15 +87,19 @@ export default function SettingsPage() {
           {FIELDS.map((f) => (
             <div key={f.key}>
               <label>{f.label}</label>
-              <input type="number" step="any"
-                value={f.pct ? (merged[f.key] * 100) : merged[f.key]}
-                onChange={(e) => onChange(f.key, e.target.value, f.pct)} />
+              <input
+                type="text"
+                inputMode="decimal"
+                value={drafts[f.key] ?? ''}
+                onChange={(e) => onChange(f.key, e.target.value)}
+              />
             </div>
           ))}
         </div>
         <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 10 }}>
-          <button onClick={save} disabled={Object.keys(dirty).length === 0}>Save</button>
-          {saved && <div className="muted">Saved.</div>}
+          <button onClick={save} disabled={!anyDirty}>Save</button>
+          {anyDirty && <button className="ghost" onClick={reset}>Reset</button>}
+          {saved && !anyDirty && <div className="muted">Saved.</div>}
         </div>
       </div>
     </div>
