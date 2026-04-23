@@ -3,9 +3,9 @@
 Buy-and-hold real estate investing analysis — hand-written financial formulas,
 per-property scenarios with history, and Excel/PDF reports.
 
-> **Status:** Phases 1 (formula core), 2 (SQLite persistence + CLI), 3
-> (Electron desktop UI), and 4 (Excel/PDF/Markdown export) are live. See the
-> roadmap below.
+> **Status:** Phases 1–5 are live. The core, persistence, Electron UI,
+> Excel/PDF/Markdown export, revision history, and scenario comparison all
+> work today. Zillow import is the remaining planned phase.
 
 ## What's in here today
 
@@ -22,6 +22,7 @@ drive it:
 - **CLI** — add/list properties, create and update scenarios against inputs JSON, print metrics, browse revision history
 - **Electron desktop app** — property list, property detail page with scenario tabs, minimal-with-advanced scenario form, live metrics panel with pass/fail flags against your hurdle rates, and a settings page
 - **Reports** — export any scenario's latest revision as an Excel workbook (Summary + full amortization + Assumptions sheets), a one-page PDF summary, or a Markdown file. Available from the UI (Export buttons) or the CLI (`report <scenarioId> --format ...`).
+- **Revision history & comparison** — click "Show history" on a scenario to see the timeline of revisions with their headline metrics and "restore these inputs" for any earlier revision. When a property has two or more scenarios, the "Compare" tab shows them side by side with best/worst flags per metric (cap rate, CoC, DSCR, cash flow, GRM, total cash invested, monthly payment).
 
 Closing costs can be expressed as a % of price, a flat per-unit amount, or
 both (they'll be summed).
@@ -115,10 +116,10 @@ src/
   preload/              contextBridge exposing window.api to the renderer
   renderer/             React UI
     src/pages/          PropertyList, PropertyDetail, Settings
-    src/components/     ScenarioForm, MetricsPanel
+    src/components/     ScenarioForm, MetricsPanel, RevisionHistory, ScenarioCompare
   reports/              Excel, PDF, and Markdown builders (framework-free)
 examples/               sample scenario inputs JSON
-tests/                  vitest suite — 75 tests and counting
+tests/                  vitest suite — 80 tests and counting
 ```
 
 ## Roadmap
@@ -129,7 +130,7 @@ tests/                  vitest suite — 75 tests and counting
 | 2 ✅ | SQLite schema, repositories, settings, minimal CLI |
 | 3 ✅ | Electron shell, property list, entry form, results panel |
 | 4 ✅ | Excel (.xlsx), PDF, and Markdown report generators |
-| 5 | Revision history UI and side-by-side scenario comparison |
+| 5 ✅ | Revision history UI and side-by-side scenario comparison |
 | Later | Zillow listing import |
 
 The full plan lives in

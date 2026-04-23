@@ -99,3 +99,28 @@ summary { cursor: pointer; font-size: 13px; font-weight: 500; padding: 4px 0; }
 .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
 
 .error { color: var(--bad); font-size: 12px; margin-top: 6px; }
+
+/* Revision history */
+.rev-row { border-bottom: 1px solid var(--border); padding: 8px 0; }
+.rev-row:last-child { border-bottom: none; }
+.rev-header { display: flex; align-items: center; gap: 12px; cursor: pointer; }
+.rev-header:hover { background: rgba(0,0,0,0.03); }
+.rev-when { width: 170px; font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+.rev-when .badge { font-size: 10px; padding: 1px 6px; background: var(--accent); color: #fff; border-radius: 3px; }
+.rev-metrics { flex: 1; display: flex; gap: 14px; font-size: 12px; flex-wrap: wrap; }
+.rev-metrics .good { color: var(--good); }
+.rev-metrics .bad { color: var(--bad); }
+.rev-arrow { width: 14px; text-align: right; }
+.rev-note { padding-left: 170px; font-size: 12px; margin-top: 2px; }
+.rev-detail { padding: 10px 0 6px 170px; }
+.rev-detail-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px 20px; font-size: 12px; }
+
+/* Compare table */
+.compare-scroll { overflow-x: auto; }
+.compare-table { border-collapse: collapse; width: 100%; font-size: 13px; }
+.compare-table th, .compare-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+.compare-table th { background: var(--panel); color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+.compare-table td.best { color: var(--good); font-weight: 600; }
+.compare-table td.worst { color: var(--bad); }
+.compare-table .metric-name { color: var(--fg); font-weight: 500; }
+.compare-table .direction { color: var(--muted); font-size: 11px; font-weight: 400; }

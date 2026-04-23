@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import ScenarioForm from '../components/ScenarioForm.jsx';
 import MetricsPanel from '../components/MetricsPanel.jsx';
+import RevisionHistory from '../components/RevisionHistory.jsx';
+import ScenarioCompare from '../components/ScenarioCompare.jsx';
 import { fmtDate } from '../lib/format.js';
 
 export default function PropertyDetailPage({ propertyId, onBack }) {
@@ -8,8 +10,10 @@ export default function PropertyDetailPage({ propertyId, onBack }) {
   const [scenarios, setScenarios] = useState([]);
   const [activeScenarioId, setActiveScenarioId] = useState(null);
   const [latest, setLatest] = useState(null);
-  const [mode, setMode] = useState('view'); // view | edit | newScenario
+  const [mode, setMode] = useState('view'); // view | edit | newScenario | compare
   const [newName, setNewName] = useState('');
+  const [showHistory, setShowHistory] = useState(false);
+  const [historyKey, setHistoryKey] = useState(0); // bumped to force RevisionHistory refetch
 
   const loadProperty = useCallback(async () => {
     const p = await window.api.properties.getById(propertyId);
@@ -55,6 +59,13 @@ export default function PropertyDetailPage({ propertyId, onBack }) {
   async function handleUpdateScenario(inputs) {
     await window.api.scenarios.update(activeScenarioId, { inputs, note: null });
     setMode('view');
+    setHistoryKey((k) => k + 1);
+    await loadLatest();
+    await loadScenarios();
+  }
+
+  async function handleAfterRestore() {
+    setHistoryKey((k) => k + 1);
     await loadLatest();
     await loadScenarios();
   }
@@ -102,8 +113,8 @@ export default function PropertyDetailPage({ propertyId, onBack }) {
         {scenarios.map((s) => (
           <button
             key={s.id}
-            className={`tab ${s.id === activeScenarioId ? 'active' : ''}`}
-            onClick={() => { setActiveScenarioId(s.id); setMode('view'); }}
+            className={`tab ${s.id === activeScenarioId && mode !== 'compare' ? 'active' : ''}`}
+            onClick={() => { setActiveScenarioId(s.id); setMode('view'); setShowHistory(false); }}
           >
             {s.name}
             {s.is_current ? <span className="badge">current</span> : null}
@@ -115,7 +126,21 @@ export default function PropertyDetailPage({ propertyId, onBack }) {
         >
           + New scenario
         </button>
+        {scenarios.length >= 2 && (
+          <button
+            className={`tab ${mode === 'compare' ? 'active' : ''}`}
+            onClick={() => setMode(mode === 'compare' ? 'view' : 'compare')}
+          >
+            Compare
+          </button>
+        )}
       </div>
+
+      {mode === 'compare' && (
+        <div className="card">
+          <ScenarioCompare propertyId={propertyId} />
+        </div>
+      )}
 
       {mode === 'newScenario' && (
         <div className="card">
@@ -163,13 +188,25 @@ export default function PropertyDetailPage({ propertyId, onBack }) {
                 Latest revision: {fmtDate(latest.created_at)}
               </div>
               <MetricsPanel outputs={latest.outputs} />
-              <div style={{ marginTop: 14, display: 'flex', gap: 8, alignItems: 'center' }}>
-                <span className="muted">Export:</span>
+              <div style={{ marginTop: 14, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                <button className="ghost" onClick={() => setShowHistory((v) => !v)}>
+                  {showHistory ? 'Hide history' : 'Show history'}
+                </button>
+                <span className="muted" style={{ marginLeft: 8 }}>Export:</span>
                 <button className="ghost" onClick={() => handleExport('excel')}>Excel</button>
                 <button className="ghost" onClick={() => handleExport('pdf')}>PDF</button>
                 <button className="ghost" onClick={() => handleExport('md')}>Markdown</button>
                 {exportMsg && <span className="muted" style={{ marginLeft: 8 }}>{exportMsg}</span>}
               </div>
+              {showHistory && (
+                <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px solid var(--border)' }}>
+                  <RevisionHistory
+                    key={`${activeScenarioId}-${historyKey}`}
+                    scenarioId={activeScenarioId}
+                    onRestored={handleAfterRestore}
+                  />
+                </div>
+              )}
             </>
           ) : (
             <div className="muted" style={{ marginTop: 8 }}>No revisions yet for this scenario.</div>
