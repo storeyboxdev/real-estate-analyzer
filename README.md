@@ -101,6 +101,119 @@ it automatically for the right runtime (Node for tests/CLI, Electron for the
 desktop app). You can also run `npm run rebuild:node` or `npm run
 rebuild:electron` manually if you switch contexts.
 
+## Using the app
+
+A walkthrough from first launch to multi-scenario analysis. All of this
+works from the desktop UI; the CLI mirrors it for the same flow at the
+terminal (see "Quick example — from the CLI" above).
+
+### 1. Set your defaults once (Settings tab)
+
+Open **Settings** in the top bar. Fill in your current mortgage rate and
+your hurdle rates — cap rate and cash-on-cash thresholds the app will use
+to flag each deal pass or fail. The other fields (default down payment,
+loan term, closing cost %, closing cost per unit, vacancy, management,
+maintenance, capex) pre-populate the scenario form when you create a new
+scenario, so you don't have to retype them for every property. Click
+**Save**. These values are stored in the local DB and persist across
+sessions; change them any time — existing scenarios keep the values they
+were analyzed with.
+
+### 2. Add a property (Properties tab)
+
+Click **+ Add property**. Enter the address, set **Type** (single-family or
+multi-family), set **Units** (the number of rentable units), and optionally
+add notes — e.g. "off-market lead from John". Click **Create**. The property
+appears in the list; click its row to open it.
+
+### 3. Create your first scenario
+
+A scenario is a named set of inputs attached to a property ("asking",
+"my offer", "after rate drop", etc.). On the property page, click
+**+ New scenario**:
+
+- Enter a **Scenario name**.
+- Fill the **Minimal inputs**: purchase price, interest rate.
+- Fill one **monthly rent** per unit (use **+ Add unit** if you need more
+  than the property has defined).
+- Enter **Annual taxes** and **Annual insurance** — these are the two
+  fixed expenses most underwriting books treat as required inputs.
+- Click **Advanced** to override any default (down payment, loan term,
+  closing costs as % *and/or* $/unit, rehab budget, vacancy, management,
+  maintenance, capex, HOA, utilities, other opex, other monthly income).
+- Click **Create scenario**.
+
+The first scenario on a property is automatically marked **current**.
+
+### 4. Read the metrics panel
+
+After saving, the scenario view shows three grouped metric blocks:
+
+- **Financing** — loan amount, down payment, closing costs, total cash
+  invested, monthly P&I, annual debt service.
+- **Income & Expenses** — GSI, EGI, operating expenses, NOI, annual and
+  monthly cash flow (green if ≥ 0, red if negative).
+- **Returns vs. Hurdles** — cap rate, cash-on-cash, DSCR, GRM. Cap rate
+  and CoC get a ✓ or ✗ depending on your Settings hurdle values; DSCR is
+  green when ≥ 1 (the property covers its mortgage from operations).
+
+### 5. Re-run when something changes (price drop, rate change, new info)
+
+Open the scenario and click **Edit / update**. The form reloads with the
+latest revision's inputs pre-filled. Change whatever moved — typically
+the purchase price or the interest rate — and click **Save revision**.
+The app appends a *new revision* rather than overwriting, so the old
+numbers stay in the history. The scenario view immediately shows the
+new metrics.
+
+### 6. Inspect the history
+
+Click **Show history** below the metrics panel. Every revision is listed
+newest-first with the headline numbers (cap, CoC, DSCR, annual cash flow)
+and any note. Click a row to expand the core inputs and outputs for that
+revision. For earlier revisions, click **Restore these inputs** to append
+a fresh revision using those inputs — useful if you talked yourself out of
+an offer and want to revisit it without losing the current revision.
+
+### 7. Compare scenarios side-by-side
+
+Create a second scenario on the same property ("my offer"). Once a
+property has two or more scenarios, a **Compare** tab appears. Click it
+to see every scenario's latest revision in columns with the best value
+highlighted green and the worst red for each metric (each metric knows
+whether higher or lower is better). Use the checkboxes to include or
+exclude scenarios from the comparison.
+
+### 8. Export a report
+
+With a scenario open, use the **Export: Excel / PDF / Markdown** buttons
+below the metrics. A save dialog opens with a pre-filled filename based
+on the address + scenario name. Choose where to save it.
+
+- **Excel** — three sheets: Summary (headline metrics + section colors),
+  Amortization (month-by-month schedule for the full loan term), and
+  Assumptions (every input used).
+- **PDF** — a one-page letter-sized summary good for sharing or filing.
+- **Markdown** — a plain-text version with tables, easy to paste into
+  notes or email.
+
+### 9. Update globals mid-session and re-run
+
+Change a hurdle rate or the current mortgage rate on the Settings page at
+any time. Hurdle changes take effect immediately on the pass/fail flags
+for new or re-saved revisions. (Existing saved revisions keep the
+flags that were computed when they were saved — re-edit and save a
+revision to re-evaluate against the new hurdles.)
+
+### The same flow from the CLI
+
+Every step above has a CLI equivalent under `npm run cli -- --help`. The
+desktop app and the CLI operate on separate databases by default (the
+app writes to your OS user-data directory; the CLI writes to
+`./data.sqlite`), so you can use either without the other's state
+getting in the way. Point them at the same file with `--db <path>` if
+you want to share.
+
 ## Project layout
 
 ```
