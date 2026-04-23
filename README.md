@@ -3,9 +3,9 @@
 Buy-and-hold real estate investing analysis — hand-written financial formulas,
 per-property scenarios with history, and Excel/PDF reports.
 
-> **Status:** Phases 1–5 are live. The core, persistence, Electron UI,
-> Excel/PDF/Markdown export, revision history, and scenario comparison all
-> work today. Zillow import is the remaining planned phase.
+> **Status:** Phases 1–6 are live. The core, persistence, Electron UI,
+> Excel/PDF/Markdown export, revision history, scenario comparison, and
+> paste-from-listing import all work today.
 
 ## What's in here today
 
@@ -23,6 +23,7 @@ drive it:
 - **Electron desktop app** — property list, property detail page with scenario tabs, minimal-with-advanced scenario form, live metrics panel with pass/fail flags against your hurdle rates, and a settings page
 - **Reports** — export any scenario's latest revision as an Excel workbook (Summary + full amortization + Assumptions sheets), a one-page PDF summary, or a Markdown file. Available from the UI (Export buttons) or the CLI (`report <scenarioId> --format ...`).
 - **Revision history & comparison** — click "Show history" on a scenario to see the timeline of revisions with their headline metrics and "restore these inputs" for any earlier revision. When a property has two or more scenarios, the "Compare" tab shows them side by side with best/worst flags per metric (cap rate, CoC, DSCR, cash flow, GRM, total cash invested, monthly payment).
+- **Listing paste import** — paste raw text copied from a Zillow/Redfin/Trulia/MLS listing page, and the app pulls out address, property type, unit count (with duplex/triplex/fourplex inference), price, rent estimate, annual taxes, HOA, and beds/baths/sqft. Fields are fully editable in the preview before you create the property. No scraping — the app never contacts Zillow; you control what text comes in.
 
 Closing costs can be expressed as a % of price, a flat per-unit amount, or
 both (they'll be summed).
@@ -121,10 +122,21 @@ were analyzed with.
 
 ### 2. Add a property (Properties tab)
 
-Click **+ Add property**. Enter the address, set **Type** (single-family or
-multi-family), set **Units** (the number of rentable units), and optionally
-add notes — e.g. "off-market lead from John". Click **Create**. The property
-appears in the list; click its row to open it.
+You have two entry points:
+
+- **+ Add property** — enter the address, set **Type** (single-family or
+  multi-family), set **Units**, and optionally add notes. Click **Create**.
+- **Import from paste** — copy the page text from a listing in your browser
+  and paste it here. The app parses address, property type, unit count
+  (including duplex/triplex/fourplex inference), price, rent estimate,
+  taxes, HOA, and beds/baths/sqft. Review the preview, fix anything that
+  looks wrong, and click **Create property with this draft** — you land on
+  the new property's detail page with the new-scenario form already open
+  and pre-populated with the price, rent, and taxes that were parsed.
+  Nothing is sent to any website; the parser runs locally on whatever text
+  you paste in.
+
+Either way, the property appears in the list; click its row to open it.
 
 ### 3. Create your first scenario
 
@@ -220,8 +232,9 @@ you want to share.
 src/
   core/                 pure JS — shared across Electron and future web UI
     formulas/           tvm, amortization, cashflow, returns
-    analysis/           analyze() — single entry point
+    analysis/           analyze() — single entry point, plus compare()
     models/             zod schemas (single source of truth for input shape)
+    parsers/            listingPaste.js — extract a property + scenario draft from pasted text
   db/                   SQLite schema, migrations, repositories
     repositories/       settings, properties, scenarios, revisions
   cli.js                command-line interface over the repositories
@@ -229,10 +242,10 @@ src/
   preload/              contextBridge exposing window.api to the renderer
   renderer/             React UI
     src/pages/          PropertyList, PropertyDetail, Settings
-    src/components/     ScenarioForm, MetricsPanel, RevisionHistory, ScenarioCompare
+    src/components/     ScenarioForm, MetricsPanel, RevisionHistory, ScenarioCompare, ListingPasteDialog
   reports/              Excel, PDF, and Markdown builders (framework-free)
 examples/               sample scenario inputs JSON
-tests/                  vitest suite — 80 tests and counting
+tests/                  vitest suite — 92 tests and counting
 ```
 
 ## Roadmap
@@ -244,7 +257,7 @@ tests/                  vitest suite — 80 tests and counting
 | 3 ✅ | Electron shell, property list, entry form, results panel |
 | 4 ✅ | Excel (.xlsx), PDF, and Markdown report generators |
 | 5 ✅ | Revision history UI and side-by-side scenario comparison |
-| Later | Zillow listing import |
+| 6 ✅ | Listing paste import (Zillow/Redfin/Trulia/MLS text → pre-filled property + scenario draft) |
 
 The full plan lives in
 [`plans/i-want-to-build-deep-sutherland.md`](https://github.com/storeyboxdev/real-estate-analyzer)

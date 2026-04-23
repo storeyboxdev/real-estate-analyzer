@@ -27,11 +27,16 @@ export default function App() {
       </header>
       <main className="content">
         {view.name === 'list' && (
-          <PropertyListPage onOpenProperty={(id) => setView({ name: 'detail', propertyId: id })} />
+          <PropertyListPage
+            onOpenProperty={(id, scenarioDraft) =>
+              setView({ name: 'detail', propertyId: id, scenarioDraft })
+            }
+          />
         )}
         {view.name === 'detail' && (
           <PropertyDetailPage
             propertyId={view.propertyId}
+            scenarioDraft={view.scenarioDraft}
             onBack={() => setView({ name: 'list' })}
           />
         )}

@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
+import ListingPasteDialog from '../components/ListingPasteDialog.jsx';
 
 export default function PropertyListPage({ onOpenProperty }) {
   const [properties, setProperties] = useState([]);
   const [creating, setCreating] = useState(false);
+  const [importing, setImporting] = useState(false);
   const [form, setForm] = useState({ address: '', propertyType: 'sfr', units: 1, notes: '' });
   const [error, setError] = useState(null);
 
@@ -29,14 +31,35 @@ export default function PropertyListPage({ onOpenProperty }) {
     }
   }
 
+  async function handleImportCreate({ property, scenarioDraft }) {
+    const created = await window.api.properties.create(property);
+    setImporting(false);
+    await refresh();
+    // Navigate to the detail page with the parsed scenario draft so the new-scenario
+    // form opens pre-filled.
+    onOpenProperty(created.id, Object.keys(scenarioDraft).length ? scenarioDraft : null);
+  }
+
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <h1 style={{ margin: 0, flex: 1 }}>Properties</h1>
-        <button onClick={() => setCreating((v) => !v)}>
+        <button className="ghost" onClick={() => { setImporting((v) => !v); setCreating(false); }}>
+          {importing ? 'Cancel import' : 'Import from paste'}
+        </button>
+        <button onClick={() => { setCreating((v) => !v); setImporting(false); }}>
           {creating ? 'Cancel' : '+ Add property'}
         </button>
       </div>
+
+      {importing && (
+        <div style={{ marginTop: 14 }}>
+          <ListingPasteDialog
+            onCreate={handleImportCreate}
+            onCancel={() => setImporting(false)}
+          />
+        </div>
+      )}
 
       {creating && (
         <form className="card" onSubmit={submit} style={{ marginTop: 14 }}>

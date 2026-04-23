@@ -5,13 +5,14 @@ import RevisionHistory from '../components/RevisionHistory.jsx';
 import ScenarioCompare from '../components/ScenarioCompare.jsx';
 import { fmtDate } from '../lib/format.js';
 
-export default function PropertyDetailPage({ propertyId, onBack }) {
+export default function PropertyDetailPage({ propertyId, onBack, scenarioDraft }) {
   const [property, setProperty] = useState(null);
   const [scenarios, setScenarios] = useState([]);
   const [activeScenarioId, setActiveScenarioId] = useState(null);
   const [latest, setLatest] = useState(null);
-  const [mode, setMode] = useState('view'); // view | edit | newScenario | compare
-  const [newName, setNewName] = useState('');
+  const [mode, setMode] = useState(scenarioDraft ? 'newScenario' : 'view');
+  const [newName, setNewName] = useState(scenarioDraft ? 'asking' : '');
+  const [draft] = useState(scenarioDraft ?? null); // frozen at mount — only applies once
   const [showHistory, setShowHistory] = useState(false);
   const [historyKey, setHistoryKey] = useState(0); // bumped to force RevisionHistory refetch
 
@@ -145,11 +146,21 @@ export default function PropertyDetailPage({ propertyId, onBack }) {
       {mode === 'newScenario' && (
         <div className="card">
           <h2>New scenario</h2>
+          {draft && (
+            <div className="muted" style={{ marginBottom: 8 }}>
+              Pre-filled from the pasted listing. Review and fill in anything missing (interest rate, insurance, etc.).
+            </div>
+          )}
           <label>Scenario name</label>
           <input value={newName} onChange={(e) => setNewName(e.target.value)}
             placeholder="e.g. asking, my offer, after rate drop" />
           <div style={{ marginTop: 12 }}>
-            <ScenarioForm initialUnits={property.units} submitLabel="Create scenario" onSubmit={handleCreateScenario} />
+            <ScenarioForm
+              initialUnits={property.units}
+              initialInputs={draft}
+              submitLabel="Create scenario"
+              onSubmit={handleCreateScenario}
+            />
           </div>
         </div>
       )}
