@@ -3,6 +3,7 @@
   "closingCostPct": 0.03,
   "closingCostPerUnit": 0,
   "rehabBudget": 0,
+  "initialMissedRent": 0,
   "downPaymentPct": 0.25,
   "loanTermYears": 30,
   "interestRate": 0.0725,

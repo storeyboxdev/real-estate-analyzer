@@ -18,6 +18,7 @@ const DEFAULTS = {
   closingCostPct: '3',
   closingCostPerUnit: '0',
   rehabBudget: '0',
+  initialMissedRent: '0',
   otherIncomeMonthly: '0',
   vacancyPct: '5',
   managementPct: '8',
@@ -41,6 +42,7 @@ function toInputs(state) {
     closingCostPct: n(state.closingCostPct) / 100,
     closingCostPerUnit: n(state.closingCostPerUnit),
     rehabBudget: n(state.rehabBudget),
+    initialMissedRent: n(state.initialMissedRent),
     downPaymentPct: n(state.downPaymentPct) / 100,
     loanTermYears: n(state.loanTermYears),
     interestRate: n(state.interestRatePct) / 100,
@@ -83,6 +85,7 @@ function fromInputs(inputs) {
     closingCostPct: inputs.closingCostPct != null ? displayPct(inputs.closingCostPct) : '3',
     closingCostPerUnit: inputs.closingCostPerUnit != null ? displayNum(inputs.closingCostPerUnit) : '0',
     rehabBudget: inputs.rehabBudget != null ? displayNum(inputs.rehabBudget) : '0',
+    initialMissedRent: inputs.initialMissedRent != null ? displayNum(inputs.initialMissedRent) : '0',
     otherIncomeMonthly: inputs.otherIncomeMonthly != null ? displayNum(inputs.otherIncomeMonthly) : '0',
     vacancyPct: inputs.vacancyPct != null ? displayPct(inputs.vacancyPct) : '5',
     managementPct: inputs.managementPct != null ? displayPct(inputs.managementPct) : '8',
@@ -200,7 +203,7 @@ export default function ScenarioForm({ initialInputs, initialUnits = 1, onSubmit
       </div>
 
       <details>
-        <summary>Advanced — financing, operating assumptions, other expenses</summary>
+        <summary>Advanced — financing, setup costs, operating assumptions, other expenses</summary>
         <h3>Financing</h3>
         <div className="grid-3">
           <div>
@@ -214,11 +217,6 @@ export default function ScenarioForm({ initialInputs, initialUnits = 1, onSubmit
               onChange={(e) => update('loanTermYears', e.target.value)} />
           </div>
           <div>
-            <label>Rehab budget ($)</label>
-            <input {...numProps} value={state.rehabBudget}
-              onChange={(e) => update('rehabBudget', e.target.value)} />
-          </div>
-          <div>
             <label>Closing costs (% of price)</label>
             <input {...numProps} value={state.closingCostPct}
               onChange={(e) => update('closingCostPct', e.target.value)} />
@@ -227,6 +225,26 @@ export default function ScenarioForm({ initialInputs, initialUnits = 1, onSubmit
             <label>Closing costs ($ per unit)</label>
             <input {...numProps} value={state.closingCostPerUnit}
               onChange={(e) => update('closingCostPerUnit', e.target.value)} />
+            <div className="muted" style={{ fontSize: 11, marginTop: 3 }}>
+              If set above 0, this replaces the % above — it isn't added to it.
+            </div>
+          </div>
+        </div>
+
+        <h3>Initial setup costs (roll into total cash invested)</h3>
+        <div className="grid-2">
+          <div>
+            <label>Repairs needed until rentable ($)</label>
+            <input {...numProps} value={state.rehabBudget}
+              onChange={(e) => update('rehabBudget', e.target.value)} />
+          </div>
+          <div>
+            <label>Missed rent / holding costs during setup ($)</label>
+            <input {...numProps} value={state.initialMissedRent}
+              onChange={(e) => update('initialMissedRent', e.target.value)} />
+            <div className="muted" style={{ fontSize: 11, marginTop: 3 }}>
+              Rent you won't collect while getting the property rent-ready, plus any mortgage/taxes/insurance paid during that window.
+            </div>
           </div>
         </div>
 

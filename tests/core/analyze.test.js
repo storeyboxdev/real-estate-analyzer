@@ -93,14 +93,42 @@ describe('analyze — closing costs', () => {
     expect(r.closingCosts).toBe(1500 * 4);
   });
 
-  it('sums both when both are provided', () => {
+  it('uses per-unit exclusively when both are provided (no double-counting)', () => {
     const r = analyze({
       ...baseInputs,
       closingCostPct: 0.02,
       closingCostPerUnit: 1000,
       unitRents: [1500, 1500],
     });
-    // 0.02 * 200000 + 2 * 1000 = 4000 + 2000 = 6000
-    expect(r.closingCosts).toBe(6000);
+    // Per-unit wins: 2 * 1000 = 2000. The 0.02 * 200000 = 4000 from the pct is ignored.
+    expect(r.closingCosts).toBe(2000);
+  });
+
+  it('falls back to the pct when per-unit is 0', () => {
+    const r = analyze({
+      ...baseInputs,
+      closingCostPct: 0.04,
+      closingCostPerUnit: 0,
+      unitRents: [1500, 1500],
+    });
+    expect(r.closingCosts).toBe(0.04 * 200000);
+  });
+});
+
+describe('analyze — initial acquisition costs', () => {
+  it('rolls rehab budget and missed rent into totalCashInvested', () => {
+    const r = analyze({ ...baseInputs, rehabBudget: 8000, initialMissedRent: 3600 });
+    // Base: down 50000 + closing 6000 + rehab 8000 + missed rent 3600 = 67,600
+    expect(r.totalCashInvested).toBe(50000 + 6000 + 8000 + 3600);
+  });
+
+  it('does not change NOI, cap rate, or DSCR when acquisition costs change', () => {
+    const without = analyze({ ...baseInputs, rehabBudget: 0, initialMissedRent: 0 });
+    const withCosts = analyze({ ...baseInputs, rehabBudget: 8000, initialMissedRent: 3600 });
+    expect(withCosts.noi).toBe(without.noi);
+    expect(withCosts.capRate).toBe(without.capRate);
+    expect(withCosts.dscr).toBe(without.dscr);
+    // But cash-on-cash falls because total cash invested rose
+    expect(withCosts.cocReturn).toBeLessThan(without.cocReturn);
   });
 });

@@ -6,10 +6,12 @@ const nonNeg = z.number().min(0);
 export const ScenarioInputsSchema = z.object({
   // Purchase
   purchasePrice: z.number().positive(),
-  // Closing costs can be expressed as a % of price, a flat per-unit amount, or both (summed).
+  // Closing costs: if `closingCostPerUnit` is > 0, it's used exclusively.
+  // Otherwise `closingCostPct` is applied to the purchase price.
   closingCostPct: pct.default(0.03),
   closingCostPerUnit: nonNeg.default(0),
-  rehabBudget: nonNeg.default(0),
+  rehabBudget: nonNeg.default(0),          // repairs needed to reach rent-ready
+  initialMissedRent: nonNeg.default(0),    // missed rent + holding costs during setup
 
   // Financing
   downPaymentPct: pct.default(0.25),

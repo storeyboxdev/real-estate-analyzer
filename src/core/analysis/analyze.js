@@ -20,6 +20,7 @@ export function analyze(rawInputs, rawSettings = {}) {
     closingCostPct,
     closingCostPerUnit,
     rehabBudget,
+    initialMissedRent,
     downPaymentPct,
     loanTermYears,
     interestRate,
@@ -38,9 +39,17 @@ export function analyze(rawInputs, rawSettings = {}) {
 
   const downPayment = purchasePrice * downPaymentPct;
   const loanAmount = purchasePrice - downPayment;
-  // Closing costs may come from a % of price, a flat per-unit amount, or both.
-  const closingCosts = purchasePrice * closingCostPct + unitRents.length * closingCostPerUnit;
-  const totalCashInvested = downPayment + closingCosts + rehabBudget;
+  // Closing costs: per-unit amount overrides the percentage when set. Users
+  // generally think of closings as EITHER a % of price OR a flat $/door, not
+  // both — summing them double-counts the same line items.
+  const closingCosts =
+    closingCostPerUnit > 0
+      ? unitRents.length * closingCostPerUnit
+      : purchasePrice * closingCostPct;
+  // Initial acquisition cash: down + closing + repairs-until-rentable +
+  // missed rent / holding costs during setup. All reduce cash-on-cash return
+  // but do not affect NOI or cap rate (those reflect stabilized operations).
+  const totalCashInvested = downPayment + closingCosts + rehabBudget + initialMissedRent;
 
   const monthlyPmt = monthlyPayment(loanAmount, interestRate, loanTermYears);
   const annualDebtService = monthlyPmt * 12;

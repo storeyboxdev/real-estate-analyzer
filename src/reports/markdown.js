@@ -59,6 +59,8 @@ export function buildMarkdown(ctx) {
   lines.push('## Assumptions');
   lines.push('');
   const i = ctx.inputs;
+  if (i.rehabBudget) lines.push(`- Repairs until rentable: ${usd(i.rehabBudget)}`);
+  if (i.initialMissedRent) lines.push(`- Missed rent during setup: ${usd(i.initialMissedRent)}`);
   lines.push(`- Vacancy: ${pct(i.vacancyPct)}`);
   lines.push(`- Management: ${pct(i.managementPct)}`);
   lines.push(`- Maintenance: ${pct(i.maintenancePct)}`);
